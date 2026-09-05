@@ -4,3 +4,4 @@
 # another per-platform series -- the pool entry stays the single source of
 # truth and the resolved order stays series.common first.
 0001-ac4-decoder-and-parser.patch
+0002-ac4-parser.patch
