@@ -4,23 +4,23 @@
       "assetBase": "https://github.com/swmarks/mpv-build/releases/download/binaries-android",
       "libraries": {
         "libmpv-android": {
-          "key": "d78d421fd85c",
+          "key": "e6840cb70655",
           "prebuilt": {
             "arm64-v8a": {
-              "asset": "libmpv-android-d78d421fd85c-arm64-v8a.tar.gz",
-              "checksum": "9253c80bb743bb84f4d0d7b58260b2b67a00ecfe38289aad2a8f75257adfd939"
+              "asset": "libmpv-android-e6840cb70655-arm64-v8a.tar.gz",
+              "checksum": "4361bdda3067bfa2a440105ecc0bfd25f734aca482106a4a0aabe841fba32158"
             },
             "armeabi-v7a": {
-              "asset": "libmpv-android-d78d421fd85c-armeabi-v7a.tar.gz",
-              "checksum": "36c01af9f05f8dd1e3553ca67c4dfd877b09e72fb2afb3597d7fd533cbe3a75b"
+              "asset": "libmpv-android-e6840cb70655-armeabi-v7a.tar.gz",
+              "checksum": "88bcb1c24782fd4a8b60b731775573a8ebbb52bb0a39681faa06fd933d0388ed"
             },
             "x86": {
-              "asset": "libmpv-android-d78d421fd85c-x86.tar.gz",
-              "checksum": "27c00ee796d66838bed8d32958cc5c3c6e2f872f12326979c8eff19992ba5cae"
+              "asset": "libmpv-android-e6840cb70655-x86.tar.gz",
+              "checksum": "15ac6ffd795ef54b3c22858e52fa72c1580fc28a84b133610c9467fa39f84a0f"
             },
             "x86_64": {
-              "asset": "libmpv-android-d78d421fd85c-x86_64.tar.gz",
-              "checksum": "6f0bcb4cd48aeec739784e6a5aa4abd5d8d616be4bdcecbc0aac51b9bb815dc7"
+              "asset": "libmpv-android-e6840cb70655-x86_64.tar.gz",
+              "checksum": "661297c4749f2f416c76821226c26733da574283219e729210cc310b34548bce"
             }
           }
         }
@@ -32,42 +32,42 @@
         "FFmpeg": {
           "frameworks": {
             "Libavcodec": {
-              "asset": "Libavcodec-a4743cff7775.xcframework.zip",
-              "checksum": "c7e322aafa06df44d175d80203feb52e8cddcc6681219e2b900e4c78567070c4"
+              "asset": "Libavcodec-6339a44f056c.xcframework.zip",
+              "checksum": "7c1e1d436f48004eca5cd919fa5a49f458225d5d5235b137c26bcc13b25de411"
             },
             "Libavdevice": {
-              "asset": "Libavdevice-a4743cff7775.xcframework.zip",
-              "checksum": "de22b1499d630fdf594f5017c6a8ee202b64fb89fe2be34568e30483ac6210a4"
+              "asset": "Libavdevice-6339a44f056c.xcframework.zip",
+              "checksum": "a055ad17ad62f75efa6bdbf39f3770f617a00c7eb1907897e9b9c4708d852dd3"
             },
             "Libavfilter": {
-              "asset": "Libavfilter-a4743cff7775.xcframework.zip",
-              "checksum": "f5dce199d6d507e9f867b5e408e7e284b02aecd617138459103421471eb1a480"
+              "asset": "Libavfilter-6339a44f056c.xcframework.zip",
+              "checksum": "158e47f86ddd2ec9657fdab03ee04043cab0542771718fb3578efcc5d4ef870b"
             },
             "Libavformat": {
-              "asset": "Libavformat-a4743cff7775.xcframework.zip",
-              "checksum": "9abdcd585ba4d814139ccee274e48a2202b1037dc2da3eca5a8ad9c12d03a784"
+              "asset": "Libavformat-6339a44f056c.xcframework.zip",
+              "checksum": "31fb73cdb6942d3eae6d78fcc7ecfffbf68fbb8f57e74d43105b3efcb53d0b9c"
             },
             "Libavutil": {
-              "asset": "Libavutil-a4743cff7775.xcframework.zip",
-              "checksum": "ff7268dfc54d1b955fb76a8ac54197e483f914c4fd271911e789223161d73a24"
+              "asset": "Libavutil-6339a44f056c.xcframework.zip",
+              "checksum": "efb56747b7bedabbb2d7dec802999b7e3d8b970f14979c0cf2089c196139d329"
             },
             "Libswresample": {
-              "asset": "Libswresample-a4743cff7775.xcframework.zip",
-              "checksum": "a70b3f579fe6f835d7d92327bdbc0192dec9bfc098bca3ecc4caf7982a5219ff"
+              "asset": "Libswresample-6339a44f056c.xcframework.zip",
+              "checksum": "a75b15df00b130962af8d167846107c2a5f689ce2a6ac4f65b30fe63496c48c5"
             },
             "Libswscale": {
-              "asset": "Libswscale-a4743cff7775.xcframework.zip",
-              "checksum": "db85ecf9d7471a4254052f16b001b9ccb1ef7bcb8ba3848cdae8db6d263e03e2"
+              "asset": "Libswscale-6339a44f056c.xcframework.zip",
+              "checksum": "4dfb47b9ed0c856d0d7ff4f85f8ebd532ee9b921a9da97c05f3dddfd2aa80a0b"
             }
           },
-          "key": "a4743cff7775",
+          "key": "6339a44f056c",
           "prebuilt": {
-            "ios": "FFmpeg-all-a4743cff7775-ios.zip",
-            "isimulator": "FFmpeg-all-a4743cff7775-isimulator.zip",
-            "maccatalyst": "FFmpeg-all-a4743cff7775-maccatalyst.zip",
-            "macos": "FFmpeg-all-a4743cff7775-macos.zip",
-            "tvos": "FFmpeg-all-a4743cff7775-tvos.zip",
-            "tvsimulator": "FFmpeg-all-a4743cff7775-tvsimulator.zip"
+            "ios": "FFmpeg-all-6339a44f056c-ios.zip",
+            "isimulator": "FFmpeg-all-6339a44f056c-isimulator.zip",
+            "maccatalyst": "FFmpeg-all-6339a44f056c-maccatalyst.zip",
+            "macos": "FFmpeg-all-6339a44f056c-macos.zip",
+            "tvos": "FFmpeg-all-6339a44f056c-tvos.zip",
+            "tvsimulator": "FFmpeg-all-6339a44f056c-tvsimulator.zip"
           }
         },
         "libass": {
@@ -110,15 +110,15 @@
       "assetBase": "https://github.com/swmarks/mpv-build/releases/download/binaries-linux",
       "libraries": {
         "libmpv-linux": {
-          "key": "b366f02906f5",
+          "key": "6f333de9ed48",
           "prebuilt": {
             "aarch64": {
-              "asset": "libmpv-linux-b366f02906f5-aarch64.tar.zst",
-              "checksum": "fcc5f917d6c6691ec2c07845040919ec8d833101b4d88bff1dc92c28b4b209a7"
+              "asset": "libmpv-linux-6f333de9ed48-aarch64.tar.zst",
+              "checksum": "3195d405206f3ed254c90cc1653abc15aa52708184bb956dfecdbaaae1614e07"
             },
             "x86_64": {
-              "asset": "libmpv-linux-b366f02906f5-x86_64.tar.zst",
-              "checksum": "b6182290638c73dc0de0cd91d55df2c389589e1cfbf11a4142d3150a25c95869"
+              "asset": "libmpv-linux-6f333de9ed48-x86_64.tar.zst",
+              "checksum": "d6f5bb2a9776f2449d269382f48fdbb9557f163a5c41ab6133e87db442dc0e20"
             }
           }
         }
