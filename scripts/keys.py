@@ -198,7 +198,7 @@ GROUPS = {
     "apple": Group(
         self_built=("libass", "FFmpeg", "libmpv"),
         platforms=("ios", "isimulator", "maccatalyst", "macos", "tvos", "tvsimulator"),
-        asset_base="https://github.com/edde746/mpv-build/releases/download/binaries-apple",
+        asset_base="https://github.com/swmarks/mpv-build/releases/download/binaries-apple",
         driver_sources=(
             Path("Sources/BuildScripts/Package.swift"),
             Path("Sources/BuildScripts/XCFrameworkBuild/base.swift"),
