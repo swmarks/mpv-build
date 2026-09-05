@@ -73,7 +73,7 @@ require_kind() {
 }
 
 require_kind dav1d git
-require_kind ffmpeg archive
+require_kind ffmpeg git
 require_kind shaderc git
 require_kind libplacebo git
 require_kind libass git
@@ -81,7 +81,8 @@ require_kind mpv archive
 
 FFMPEG_VERSION="$(pin_value ffmpeg version)"
 FFMPEG_URL="$(pin_value ffmpeg url)"
-FFMPEG_SHA256="$(pin_value ffmpeg sha256)"
+FFMPEG_REF="$(pin_value ffmpeg ref)"
+FFMPEG_COMMIT="$(pin_value ffmpeg commit)"
 DAV1D_VERSION="$(pin_value dav1d version)"
 DAV1D_URL="$(pin_value dav1d url)"
 DAV1D_MIRROR="$(pin_optional dav1d mirror)"
@@ -280,8 +281,9 @@ main() {
 
   # ─── Step 2: ffmpeg (static libraries) ─────────────────────────────────────
   echo "==> Building ffmpeg $FFMPEG_VERSION (static, decoder-only)..."
-  download_verified "$FFMPEG_URL" "$FFMPEG_SHA256" "$srcdir/ffmpeg.tar.xz"
-  tar -xJf "$srcdir/ffmpeg.tar.xz"
+  checkout_verified_ref \
+    "$FFMPEG_URL" "$FFMPEG_REF" "$FFMPEG_COMMIT" \
+    "$srcdir/ffmpeg-${FFMPEG_VERSION}"
   apply_patch_series ffmpeg "$srcdir/ffmpeg-${FFMPEG_VERSION}"
   cd "ffmpeg-${FFMPEG_VERSION}"
 
