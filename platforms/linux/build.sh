@@ -77,7 +77,7 @@ require_kind ffmpeg git
 require_kind shaderc git
 require_kind libplacebo git
 require_kind libass git
-require_kind mpv archive
+require_kind mpv git
 
 FFMPEG_VERSION="$(pin_value ffmpeg version)"
 FFMPEG_URL="$(pin_value ffmpeg url)"
@@ -404,8 +404,9 @@ main() {
 
   # ─── Step 6: mpv (shared libmpv) ───────────────────────────────────────────
   echo "==> Building mpv $MPV_VERSION (shared libmpv only)..."
-  download_verified "$MPV_URL" "$MPV_SHA256" "$srcdir/mpv.tar.gz"
-  tar -xzf "$srcdir/mpv.tar.gz"
+  checkout_verified_ref \
+    "$MPV_URL" "$MPV_REF" "$MPV_COMMIT" \
+    "$srcdir/mpv-${MPV_VERSION}"
   apply_patch_series mpv "$srcdir/mpv-${MPV_VERSION}"
   cd "mpv-${MPV_VERSION}"
 
