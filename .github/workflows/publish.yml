@@ -708,14 +708,65 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download partial manifests
+      - name: Download group manifests
         uses: actions/download-artifact@v4
         with:
           pattern: manifest-*
-          path: ./dist/partials
+          path: ./dist/manifests
 
-      - name: Splice partials and commit
+      # Each group's publish job rewrote only its own platforms.<group> section
+      # of artifacts.json (keys.py re-serializes the rest untouched), so
+      # splicing every downloaded section into the checked-out manifest
+      # composes the groups. The serialization below matches keys.py
+      # save_manifest byte for byte.
+      - name: Splice group sections into artifacts.json
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          python3 scripts/keys.py manifest --commit dist/partials
+          python3 - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          manifest_path = Path('artifacts.json')
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          partials = sorted(Path('dist/manifests').glob('manifest-*'))
+          if not partials:
+            raise SystemExit('no group manifests were downloaded')
+
+          for partial in partials:
+            group = partial.name[len('manifest-'):]
+            data = json.loads((partial / 'artifacts.json').read_text(encoding='utf-8'))
+            manifest['platforms'][group] = data['platforms'][group]
+            print(f'spliced platforms.{group}')
+            if group == 'apple':
+              # Package.swift is rendered from the apple section alone.
+              shutil.copy2(partial / 'Package.swift', 'Package.swift')
+
+          manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+      - name: Check for manifest changes
+        id: changes
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          if [ -n "$(git status --porcelain -- Package.swift artifacts.json)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # No pull/rebase before this: if main moved while the binaries were
+      # building, this run is superseded and its push is meant to be rejected.
+      # Rebasing would land a manifest computed from an older tree on top of the
+      # newer one, which is exactly the skew `verify` exists to prevent; the
+      # queued run for the newer commit publishes the right manifest instead.
+      # The assets uploaded above are content-addressed, so that run reuses them.
+      - name: Push binary manifest
+        if: steps.changes.outputs.changed == 'true'
+        uses: EndBug/add-and-commit@v9
+        with:
+          default_author: github_actions
+          add: |
+            - Package.swift
+            - artifacts.json
+          message: "chore: binaries for ${{ steps.changes.outputs.short_sha }} [skip binaries]"
+          push: "origin HEAD:${{ github.ref_name }}"
