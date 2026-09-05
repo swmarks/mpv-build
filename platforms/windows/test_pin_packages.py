@@ -32,7 +32,7 @@ PINS = {
     },
     "libass": {
         "version": "0.18.3",
-        "url": "https://github.com/edde746/libass",
+        "url": "https://github.com/swmarks/libass",
         "ref": "0.18.3",
         "commit": "76cdb2bc174828aac74a458d38a0786cb7af922d",
     },
@@ -173,7 +173,7 @@ class PinPackagesTest(unittest.TestCase):
 
     def test_libass_points_at_edde746_fork(self):
         pinned, _ = self.run_pin("libass")
-        self.assertIn("    GIT_REPOSITORY https://github.com/edde746/libass.git\n", pinned)
+        self.assertIn("    GIT_REPOSITORY https://github.com/swmarks/libass.git\n", pinned)
         self.assertNotIn("github.com/libass/libass", pinned)
 
     def test_ffmpeg_sparse_checkout_preserved(self):
