@@ -38,7 +38,6 @@ index 0000000..ff2ff47
 + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 + */
 +
-+#define ASSERT_LEVEL 2
 +#include "libavutil/avassert.h"
 +#include "libavutil/tx.h"
 +#include "libavutil/channel_layout.h"
