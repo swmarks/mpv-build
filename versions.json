@@ -47,15 +47,7 @@
         "linux",
         "windows"
       ],
-      "overrides": {
-        "linux": {
-          "kind": "archive",
-          "version": "7.1",
-          "url": "https://ffmpeg.org/releases/ffmpeg-7.1.tar.xz",
-          "sha256": "40973d44970dbc83ef302b0609f2e74982be2d85916dd2ee7472d30678a7abe6",
-          "provenance": "FFmpeg release archive verified against ffmpeg-7.1.tar.xz.asc with the official ffmpeg-devel.asc full fingerprint FCF986EA15E6E293A5644F10B4322F04D67658D8 before recording this digest. Carried over from plezy's linux/packaging/native-inputs.json; converging linux onto the shared n8.0.1 git pin is a later deliberate step."
-        }
-      }
+      "overrides": {}
     },
     "libass": {
       "kind": "git",

@@ -1,6 +1,6 @@
-From 3bfc3f76788016fd730b808799527e3a547fd1e8 Mon Sep 17 00:00:00 2001
+From 9a89e4b5c45eefc1baf1dfdeae899463a94e419d Mon Sep 17 00:00:00 2001
 From: Stuart Marks <stuart.whitfield.marks@gmail.com>
-Date: Sat, 5 Sep 2026 18:40:52 -0400
+Date: Sat, 5 Sep 2026 18:53:59 -0400
 Subject: [PATCH] avcodec: add AC-4 decoder and parser
 
 ---
@@ -12,8 +12,8 @@ Subject: [PATCH] avcodec: add AC-4 decoder and parser
  libavcodec/kbdwin.h      |    2 +-
  libavcodec/parsers.c     |    1 +
  libavformat/mpegts.c     |    5 +
- libavformat/mpegts.h     |    1 +
- 9 files changed, 8566 insertions(+), 1 deletion(-)
+ libavformat/mpegts.h     |    2 +
+ 9 files changed, 8567 insertions(+), 1 deletion(-)
  create mode 100644 libavcodec/ac4_parser.c
  create mode 100644 libavcodec/ac4dec.c
  create mode 100644 libavcodec/ac4dec_data.h
@@ -8665,14 +8665,15 @@ index 981dd8cf0d..71c7c67898 100644
              ext_desc_tag == 0x80) { /* User defined (provisional Opus) */
              if (!st->codecpar->extradata) {
 diff --git a/libavformat/mpegts.h b/libavformat/mpegts.h
-index 2bc53447d0..0bd535f6d8 100644
+index 2bc53447d0..67d28fad4f 100644
 --- a/libavformat/mpegts.h
 +++ b/libavformat/mpegts.h
-@@ -220,6 +220,7 @@ https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/
+@@ -220,6 +220,8 @@ https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/
  /* DVB descriptor_tag_extension values from
     ETSI EN 300 468 Table 109: Possible locations of extended descriptors */
  #define SUPPLEMENTARY_AUDIO_DESCRIPTOR 0x06
 +#define AC4_DESCRIPTOR 0x15
++#define AC4_DESCRIPTOR_TAG_EXTENSION 0x15
  
  /** see "Dolby Vision Streams Within the MPEG-2 Transport Stream Format"
  https://professional.dolby.com/siteassets/content-creation/dolby-vision-for-content-creators/dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2.pdf */
