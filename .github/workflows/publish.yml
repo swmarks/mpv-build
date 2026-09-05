@@ -33,7 +33,7 @@ env:
   # Active platform groups, space-separated. Every group here needs its
   # plan outputs, a build-<group>/publish-<group> job pair and a manifest
   # needs entry (see the header comment).
-  PLATFORM_GROUPS: apple android linux
+  PLATFORM_GROUPS: apple android linux windows
 
 jobs:
   tests:
@@ -686,6 +686,239 @@ jobs:
           path: ./artifacts.json
           if-no-files-found: error
 
+  build-windows:
+    name: Build windows ${{ matrix.arch }}
+    needs: plan
+    if: needs.plan.outputs.any_windows == 'true'
+    permissions:
+      contents: read
+    # Both target arches cross-compile from an x86_64 host: winbuild's
+    # GCC_ARCH probe runs the HOST compiler with -march=x86-64 and fails on
+    # arm64 hosts, and aarch64-w64-mingw32 only needs the clang toolchain,
+    # which build.sh hardcodes.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Core set validated through the pinned configure (git..libtool;
+      # unzip+patch are hard configure requirements, zip is for package.sh),
+      # plus the winbuild README ubuntu set the full ~60-package graph needs.
+      # libc++-dev and lld: the llvm bootstrap compiles with the host clang
+      # against libc++. meson comes from pip, exactly as the winbuild README
+      # instructs: apt meson (1.3.2 on noble) passes winbuild's >=1.3.0
+      # configure gate but the branch-tip packages want current meson --
+      # fontconfig main already requires >= 1.11.0.
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git cmake ninja-build build-essential pkg-config curl unzip \
+            zip patch ca-certificates python3 autoconf automake libtool \
+            libtool-bin bison flex gettext mercurial subversion gyp yasm nasm \
+            gcc-multilib g++-multilib clang lld libc++-dev libc++abi-dev \
+            libgmp-dev libmpfr-dev libmpc-dev libgcrypt-dev gperf ragel \
+            texinfo autopoint re2c asciidoc rst2pdf python3-docutils \
+            python3-mako python3-jsonschema p7zip-full ccache
+          python3 -m pip install --break-system-packages meson
+          meson --version
+
+      - name: Resolve the winbuild pin
+        id: winbuild
+        run: |
+          commit="$(python3 - <<'PY'
+          import json
+          entry = json.load(open('versions.json'))['components']['mpv-winbuild-cmake']
+          override = (entry.get('overrides') or {}).get('windows') or {}
+          print(override.get('commit', entry['commit']))
+          PY
+          )"
+          echo "commit=${commit}" >> "$GITHUB_OUTPUT"
+
+      # The llvm/rust bootstrap takes hours and the dependency graph builds
+      # ~60 packages, so the whole build state is cached, mirroring upstream
+      # winbuild's own CI (mpv_clang.yml caches src_packages, clang_root and
+      # the entire per-arch build tree). Skipping is stamp-driven ninja:
+      # an ExternalProject step re-runs only when its stamp is missing/older
+      # or its command line changed, and ninja treats an edge absent from
+      # .ninja_log as changed -- so the per-arch tree (stamps + .ninja_log +
+      # installed prefix + ccache) is the unit of caching, not a hand-picked
+      # subset. pin_packages.py suppresses upstream's check-git step, which
+      # is otherwise absent from cold graphs and cascades a full rebuild on
+      # its first warm appearance.
+      # Correctness of reuse: dep sources can only move through the winbuild
+      # commit, and the three packages pin_packages.py rewrites get new step
+      # command lines whenever versions.json pins or the patch series change,
+      # which dirties exactly those packages; build.sh fullcleans mpv every
+      # run (upstream's BUILDDATE naming dirties its packaging steps daily,
+      # and libmpv must relink against whatever changed underneath it anyway)
+      # and always runs the toolchain targets -- no-ops when clean -- which
+      # makes the last, pin-free restore tier safe across winbuild bumps.
+      # The pins tier prefers a completed state over an older one; the run_id
+      # suffix keeps every run's save unique so failed bootstraps still
+      # checkpoint their progress.
+      - name: Restore build state cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            build/windows/${{ matrix.arch }}
+            build/windows/src
+            build/windows/rustup
+          key: windows-ep2-${{ matrix.arch }}-${{ hashFiles('toolchain/windows.txt') }}-${{ steps.winbuild.outputs.commit }}-${{ hashFiles('versions.json', 'patches/**') }}-${{ github.run_id }}
+          restore-keys: |
+            windows-ep2-${{ matrix.arch }}-${{ hashFiles('toolchain/windows.txt') }}-${{ steps.winbuild.outputs.commit }}-${{ hashFiles('versions.json', 'patches/**') }}-
+            windows-ep2-${{ matrix.arch }}-${{ hashFiles('toolchain/windows.txt') }}-${{ steps.winbuild.outputs.commit }}-
+            windows-ep2-${{ matrix.arch }}-${{ hashFiles('toolchain/windows.txt') }}-
+
+      - name: Build libmpv-windows (${{ matrix.arch }})
+        run: bash platforms/windows/build.sh ${{ matrix.arch }}
+
+      # package.sh names the zip by content key itself, so the build leg
+      # uploads it as-is; publish-windows records every variant at once.
+      - name: Package dev zip (${{ matrix.arch }})
+        run: bash platforms/windows/package.sh ${{ matrix.arch }}
+
+      - name: Save build state cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            build/windows/${{ matrix.arch }}
+            build/windows/src
+            build/windows/rustup
+          key: windows-ep2-${{ matrix.arch }}-${{ hashFiles('toolchain/windows.txt') }}-${{ steps.winbuild.outputs.commit }}-${{ hashFiles('versions.json', 'patches/**') }}-${{ github.run_id }}
+
+      - name: Upload platform build (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: ./dist/release/*.zip
+          if-no-files-found: error
+
+  publish-windows:
+    name: Publish windows
+    needs: build-windows
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download platform builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: windows-*
+          path: ./dist/partials
+
+      - name: Collect release assets
+        run: |
+          mkdir -p dist/release
+          find dist/partials -type f -exec cp -v {} dist/release/ \;
+
+      - name: Record variants in the manifest
+        run: |
+          for variant in x86_64 aarch64; do
+            python3 scripts/keys.py record-platform \
+              --platform-group windows \
+              --platform "${variant}" \
+              --release-dir dist/release
+          done
+
+      - name: Verify manifest matches this commit
+        run: python3 scripts/keys.py verify --platform-group windows
+
+      - name: Upload binaries that are not published yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view binaries-windows >/dev/null 2>&1; then
+            gh release create binaries-windows \
+              --prerelease \
+              --title "Rolling binaries (windows)" \
+              --notes "Content-addressed windows build artifacts for the commits on main. Asset names encode the sources they were built from, so every asset is immutable and is never replaced. artifacts.json pins these URLs; deleting an asset breaks every commit and tag that references it."
+          fi
+
+          gh release view binaries-windows --json assets --jq '.assets[] | "\(.name) \(.digest // "")"' > ./dist/published-assets.txt
+
+          python3 - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          group = 'windows'
+          manifest = json.loads(Path('artifacts.json').read_text(encoding='utf-8'))
+          section = manifest['platforms'][group]
+          import hashlib
+          digests = {}
+          for line in Path('dist/published-assets.txt').read_text(encoding='utf-8').splitlines():
+            line = line.strip()
+            if not line:
+              continue
+            name, _, digest = line.partition(' ')
+            digests[name] = digest.removeprefix('sha256:')
+          published = set(digests)
+          release_dir = Path('dist/release')
+
+          wanted = []
+          for library, entry in sorted(section['libraries'].items()):
+            for variant in sorted(entry.get('prebuilt', {})):
+              wanted.append((library, entry['prebuilt'][variant]['asset']))
+
+          uploads = []
+          seen = set()
+          missing = []
+          for library, asset in wanted:
+            if asset in seen:
+              continue
+            seen.add(asset)
+            if asset in published:
+              # Verify-on-skip: an existing content-addressed name must hold
+              # exactly the bytes this run rebuilt, or the checksum recorded
+              # in artifacts.json drifts from what consumers download (this
+              # happened when the archives were not byte-reproducible).
+              local_path = release_dir / asset
+              remote = digests.get(asset, '')
+              if local_path.is_file() and remote:
+                local = hashlib.sha256(local_path.read_bytes()).hexdigest()
+                if local != remote:
+                  raise SystemExit(
+                    f'{asset}: rebuilt bytes {local} != published digest {remote}; '
+                    'a content-addressed asset must never change bytes -- the '
+                    'archive packaging has lost reproducibility')
+                print(f'published {asset} (bytes verified)')
+              else:
+                print(f'published {asset}')
+              continue
+            path = release_dir / asset
+            if path.is_file():
+              uploads.append(path)
+            else:
+              missing.append(f'{library}: {asset}')
+
+          # A manifest asset that is neither published nor built would leave a
+          # dead URL in artifacts.json, so refuse to commit that manifest.
+          if missing:
+            raise SystemExit('manifest references assets that were neither published nor built:\n  ' + '\n  '.join(missing))
+
+          if not uploads:
+            print('every manifest asset is already published')
+          else:
+            for path in uploads:
+              print(f'upload    {path.name}')
+            # No --clobber: an existing name is the same bytes by construction.
+            subprocess.run(['gh', 'release', 'upload', f'binaries-{group}', *(str(path) for path in uploads)], check=True)
+          PY
+
+      - name: Upload manifest for the commit job
+        uses: actions/upload-artifact@v4
+        with:
+          name: manifest-windows
+          path: ./artifacts.json
+          if-no-files-found: error
+
   manifest:
     name: Commit manifest
     # All-or-nothing composition: every group the plan job marked stale must
@@ -693,15 +926,17 @@ jobs:
     # (all-clean runs have nothing to splice and are fully verified by the
     # plan job). A group with nothing stale keeps its committed section; the
     # splice below composes however many manifest-* artifacts arrive.
-    needs: [plan, publish-apple, publish-android, publish-linux]
+    needs: [plan, publish-apple, publish-android, publish-linux, publish-windows]
     if: >-
       !cancelled() &&
       (needs.publish-apple.result == 'success' ||
        needs.publish-android.result == 'success' ||
-       needs.publish-linux.result == 'success') &&
+       needs.publish-linux.result == 'success' ||
+       needs.publish-windows.result == 'success') &&
       (needs.plan.outputs.any_apple == 'false' || needs.publish-apple.result == 'success') &&
       (needs.plan.outputs.any_android == 'false' || needs.publish-android.result == 'success') &&
-      (needs.plan.outputs.any_linux == 'false' || needs.publish-linux.result == 'success')
+      (needs.plan.outputs.any_linux == 'false' || needs.publish-linux.result == 'success') &&
+      (needs.plan.outputs.any_windows == 'false' || needs.publish-windows.result == 'success')
     permissions:
       contents: write
     runs-on: ubuntu-latest
