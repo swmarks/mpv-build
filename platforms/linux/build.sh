@@ -103,7 +103,8 @@ LIBASS_REF="$(pin_value libass ref)"
 LIBASS_COMMIT="$(pin_value libass commit)"
 MPV_VERSION="$(pin_value mpv version)"
 MPV_URL="$(pin_value mpv url)"
-MPV_SHA256="$(pin_value mpv sha256)"
+MPV_REF="$(pin_value mpv ref)"
+MPV_COMMIT="$(pin_value mpv commit)"
 
 sha256_file() {
   if command -v sha256sum >/dev/null 2>&1; then
