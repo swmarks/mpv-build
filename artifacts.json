@@ -60,7 +60,7 @@
               "checksum": "510fc43dd57e55186d5fcd96f2dda37c7547c2022751af6f460a6b4426a2705a"
             }
           },
-          "key": "a2789cf1598b",
+          "key": "",
           "prebuilt": {
             "ios": "FFmpeg-all-a2789cf1598b-ios.zip",
             "isimulator": "FFmpeg-all-a2789cf1598b-isimulator.zip",
@@ -77,7 +77,7 @@
               "checksum": "c0d5ddd4dd6afdc86587cd4f6d40ba181da14d6c32fcb0e1f6d5e6a4836202dd"
             }
           },
-          "key": "ee9fa1b07523",
+          "key": "",
           "prebuilt": {
             "ios": "libass-all-ee9fa1b07523-ios.zip",
             "isimulator": "libass-all-ee9fa1b07523-isimulator.zip",
@@ -94,7 +94,7 @@
               "checksum": "2f1f5979995276a7bb4e705672a624f35e00773493bacc19c3d733dc3fea6165"
             }
           },
-          "key": "20382424ebee",
+          "key": "",
           "prebuilt": {
             "ios": "libmpv-all-20382424ebee-ios.zip",
             "isimulator": "libmpv-all-20382424ebee-isimulator.zip",
