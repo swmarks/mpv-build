@@ -4,23 +4,23 @@
       "assetBase": "https://github.com/swmarks/mpv-build/releases/download/binaries-android",
       "libraries": {
         "libmpv-android": {
-          "key": "5e911c9a42dc",
+          "key": "a73ad1fa1953",
           "prebuilt": {
             "arm64-v8a": {
-              "asset": "libmpv-android-5e911c9a42dc-arm64-v8a.tar.gz",
-              "checksum": "76baaa1607a65942e84667fb684d9c6404fc396b965bb4be1039af250e82f1eb"
+              "asset": "libmpv-android-a73ad1fa1953-arm64-v8a.tar.gz",
+              "checksum": "bf7c04253fbb2693003293936c9d74afaa747399c40018c15f895460de169e74"
             },
             "armeabi-v7a": {
-              "asset": "libmpv-android-5e911c9a42dc-armeabi-v7a.tar.gz",
-              "checksum": "0ea134e01987adce3d0d1dd457d007ae0429b6c30b3135704e69d1a86f158b3d"
+              "asset": "libmpv-android-a73ad1fa1953-armeabi-v7a.tar.gz",
+              "checksum": "7e820d2e0a21a537177fc434f24fc7c766b45e16e0bccfa8c7502033b63cecde"
             },
             "x86": {
-              "asset": "libmpv-android-5e911c9a42dc-x86.tar.gz",
-              "checksum": "5dc70957e4c56cf453b51f3ddf8cf9bf6eb8cbe584aa9d6a30f37e59007489df"
+              "asset": "libmpv-android-a73ad1fa1953-x86.tar.gz",
+              "checksum": "53b607f7512618dda1ab75e29fb247177335e8a1138cc4f2762c9b3e9dc8569f"
             },
             "x86_64": {
-              "asset": "libmpv-android-5e911c9a42dc-x86_64.tar.gz",
-              "checksum": "5a9bdcd75232b1764709df286a4aa7cef8516cf0ffab91ee2e3fa4aafd785b7f"
+              "asset": "libmpv-android-a73ad1fa1953-x86_64.tar.gz",
+              "checksum": "c03a5fd02fbe9cf9b5b08ae355274faca7479753b9536581db09646370a46556"
             }
           }
         }
@@ -90,18 +90,18 @@
         "libmpv": {
           "frameworks": {
             "Libmpv": {
-              "asset": "Libmpv-20382424ebee.xcframework.zip",
-              "checksum": "d42c1c2fa057d83b2d90a78d6f80b23e16c564a4859f6a1aab58cbf1c3238ac3"
+              "asset": "Libmpv-348c8e30cdbe.xcframework.zip",
+              "checksum": "eba148410d11d287bb5effede452af453737cdff99e05b1f719ec286589f4f63"
             }
           },
-          "key": "20382424ebee",
+          "key": "348c8e30cdbe",
           "prebuilt": {
-            "ios": "libmpv-all-20382424ebee-ios.zip",
-            "isimulator": "libmpv-all-20382424ebee-isimulator.zip",
-            "maccatalyst": "libmpv-all-20382424ebee-maccatalyst.zip",
-            "macos": "libmpv-all-20382424ebee-macos.zip",
-            "tvos": "libmpv-all-20382424ebee-tvos.zip",
-            "tvsimulator": "libmpv-all-20382424ebee-tvsimulator.zip"
+            "ios": "libmpv-all-348c8e30cdbe-ios.zip",
+            "isimulator": "libmpv-all-348c8e30cdbe-isimulator.zip",
+            "maccatalyst": "libmpv-all-348c8e30cdbe-maccatalyst.zip",
+            "macos": "libmpv-all-348c8e30cdbe-macos.zip",
+            "tvos": "libmpv-all-348c8e30cdbe-tvos.zip",
+            "tvsimulator": "libmpv-all-348c8e30cdbe-tvsimulator.zip"
           }
         }
       }
@@ -110,15 +110,15 @@
       "assetBase": "https://github.com/swmarks/mpv-build/releases/download/binaries-linux",
       "libraries": {
         "libmpv-linux": {
-          "key": "0ff35b51b794",
+          "key": "6d7eba1342bb",
           "prebuilt": {
             "aarch64": {
-              "asset": "libmpv-linux-0ff35b51b794-aarch64.tar.zst",
-              "checksum": "3638675b42b6b0f2118122a0c6ccd3486c484f051c03ec4afe0c139bcbf17f5d"
+              "asset": "libmpv-linux-6d7eba1342bb-aarch64.tar.zst",
+              "checksum": "3788d4d68c9db763fb4f9b0a104155290b85dc215f45e7ae5a855aec9b02031a"
             },
             "x86_64": {
-              "asset": "libmpv-linux-0ff35b51b794-x86_64.tar.zst",
-              "checksum": "6e092f41a4c5f1680a27b6202fc5894075895f939b77d688dc511eb62b1df10b"
+              "asset": "libmpv-linux-6d7eba1342bb-x86_64.tar.zst",
+              "checksum": "4dce8997b9886ce1bda8d47e6c6e002bb4e0d131855f6c6d05989051991525d8"
             }
           }
         }
