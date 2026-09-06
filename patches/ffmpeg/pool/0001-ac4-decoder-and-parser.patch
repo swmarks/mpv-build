@@ -1,150 +1,6 @@
-From cae0e45c1fb688f82ac1a3a2583fcc14b5d0bfe7 Mon Sep 17 00:00:00 2001
-From: Stuart Marks <stuart.whitfield.marks@gmail.com>
-Date: Sat, 5 Sep 2026 19:06:18 -0400
-Subject: [PATCH] avcodec: add AC-4 decoder and parser
-
----
- libavcodec/Makefile          |    2 +
- libavcodec/ac4_parser.c      |   97 +
- libavcodec/ac4dec.c          | 6770 ++++++++++++++++++++++++++++++++++
- libavcodec/ac4dec_data.h     | 1688 +++++++++
- libavcodec/allcodecs.c       |    1 +
- libavcodec/kbdwin.h          |    2 +-
- libavcodec/parsers.c         |    1 +
- libavformat/mpegts.c         |    5 +
- libavformat/mpegts.h         |    2 +
- 10 files changed, 8624 insertions(+), 1 deletion(-)
- create mode 100644 libavcodec/ac4_parser.c
- create mode 100644 libavcodec/ac4dec.c
- create mode 100644 libavcodec/ac4dec_data.h
-
-diff --git a/libavcodec/Makefile b/libavcodec/Makefile
-index fb22541f8d..12168bed5e 100644
---- a/libavcodec/Makefile
-+++ b/libavcodec/Makefile
-@@ -207,6 +207,7 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
- OBJS-$(CONFIG_AAC_MEDIACODEC_DECODER)  += mediacodecdec.o
- OBJS-$(CONFIG_AAC_MF_ENCODER)          += mfenc.o mf_utils.o
- OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
-+OBJS-$(CONFIG_AC4_DECODER)             += ac4dec.o
- OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o \
-                                           kbdwin.o ac3tab.o ac3_channel_layout_tab.o
- OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o \
-@@ -1211,6 +1212,7 @@ OBJS-$(CONFIG_LIBZVBI_TELETEXT_DECODER)   += libzvbi-teletextdec.o ass.o
- # parsers
- OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
- OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o
-+OBJS-$(CONFIG_AC4_PARSER)              += ac4_parser.o
- OBJS-$(CONFIG_AC3_PARSER)              += aac_ac3_parser.o ac3tab.o \
-                                           ac3_channel_layout_tab.o
- OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o
-diff --git a/libavcodec/ac4_parser.c b/libavcodec/ac4_parser.c
-new file mode 100644
-index 0000000000..1ad425f0cf
---- /dev/null
-+++ b/libavcodec/ac4_parser.c
-@@ -0,0 +1,97 @@
-+/*
-+ * Copyright (c) 2025 Paul B Mahol
-+ *
-+ * This file is part of Librempeg
-+ *
-+ * Librempeg is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 3 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Librempeg is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with Librempeg; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+/**
-+ * @file
-+ * AC-4 audio parser
-+ *
-+ * Determines the duration for each packet.
-+ */
-+
-+#include "libavutil/mem_internal.h"
-+#include "libavutil/rational.h"
-+#include "ac4dec_data.h"
-+#include "get_bits.h"
-+#include "parser.h"
-++
-+static int variable_bits(GetBitContext *gb, int bits)
-+{
-+    int value = 0;
-+    int read_more;
-+
-+    do {
-+        value += get_bits(gb, bits);
-+        read_more = get_bits1(gb);
-+        if (read_more) {
-+            value <<= bits;
-+            value += 1 << bits;
-+        }
-+    } while (read_more);
-+
-+    return value;
-+}
-+
-+static int ac4_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
-+                     const uint8_t **poutbuf, int *poutbuf_size,
-+                     const uint8_t *buf, int buf_size)
-+{
-+    int version, frame_rate_index, ret, fs_index;
-+    AVRational resampling_ratio;
-+    GetBitContext gbc, *gb = &gbc;
-+
-+    ret = init_get_bits8(gb, buf, buf_size);
-+    if (ret < 0)
-+        return ret;
-+
-+    version = get_bits(gb, 2);
-+    if (version == 3)
-+        version += variable_bits(gb, 2);
-+    get_bits(gb, 10);
-+
-+    if (get_bits1(gb)) {
-+        int nb_wait_frames = get_bits(gb, 3);
-+
-+        if (nb_wait_frames > 0)
-+            skip_bits(gb, 2);
-+    }
-+
-+    fs_index = get_bits1(gb);
-+    frame_rate_index = get_bits(gb, 4);
-+    resampling_ratio = resampling_ratios[frame_rate_index];
-+    s1->key_frame = get_bits1(gb);
-+
-+    s1->duration = frame_len_base_48khz[frame_rate_index];
-+    avctx->sample_rate = fs_index ? 48000 : 44100;
-+    avctx->sample_rate = av_rescale(avctx->sample_rate,
-+                                    resampling_ratio.den,
-+                                    resampling_ratio.num);
-+
-+    /* always return the full packet. this parser isn't doing any splitting or
-+       combining, only packet analysis */
-+    *poutbuf      = buf;
-+    *poutbuf_size = buf_size;
-+    return buf_size;
-+}
-+
-+const AVCodecParser ff_ac4_parser = {
-+    .codec_ids      = { AV_CODEC_ID_AC4 },
-+    .parser_parse   = ac4_parse,
-+};
-diff --git a/libavcodec/ac4dec.c b/libavcodec/ac4dec.c
-new file mode 100644
-index 0000000000..9306c7d694
---- /dev/null
-+++ b/libavcodec/ac4dec.c
+diff -urpN a/libavcodec/ac4dec.c b/libavcodec/ac4dec.c
+--- a/libavcodec/ac4dec.c	1969-12-31 19:00:00.000000000 -0500
++++ b/libavcodec/ac4dec.c	2026-09-05 22:35:32.904929604 -0400
 @@ -0,0 +1,6770 @@
 +/*
 + * AC-4 Audio Decoder
@@ -6916,11 +6772,9 @@ index 0000000000..9306c7d694
 +    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
 +    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 +};
-diff --git a/libavcodec/ac4dec_data.h b/libavcodec/ac4dec_data.h
-new file mode 100644
-index 0000000000..1eb24b22f2
---- /dev/null
-+++ b/libavcodec/ac4dec_data.h
+diff -urpN a/libavcodec/ac4dec_data.h b/libavcodec/ac4dec_data.h
+--- a/libavcodec/ac4dec_data.h	1969-12-31 19:00:00.000000000 -0500
++++ b/libavcodec/ac4dec_data.h	2026-09-05 22:35:32.905944553 -0400
 @@ -0,0 +1,1688 @@
 +/*
 + * AC-4 Audio Decoder
@@ -8610,72 +8464,103 @@ index 0000000000..1eb24b22f2
 +};
 +
 +#endif /* AVCODEC_AC4DEC_DATA_H */
-diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
-index f5ec2e01e8..eedaedd363 100644
---- a/libavcodec/allcodecs.c
-+++ b/libavcodec/allcodecs.c
-@@ -431,6 +431,7 @@ extern const FFCodec ff_aac_fixed_decoder;
- extern const FFCodec ff_aac_latm_decoder;
- extern const FFCodec ff_ac3_encoder;
- extern const FFCodec ff_ac3_decoder;
-+extern const FFCodec ff_ac4_decoder;
- extern const FFCodec ff_ac3_fixed_encoder;
- extern const FFCodec ff_ac3_fixed_decoder;
- extern const FFCodec ff_acelp_kelvin_decoder;
-diff --git a/libavcodec/kbdwin.h b/libavcodec/kbdwin.h
-index 4185c4206f..2ea35e1bd5 100644
---- a/libavcodec/kbdwin.h
-+++ b/libavcodec/kbdwin.h
-@@ -24,7 +24,7 @@
- /**
-  * Maximum window size for ff_kbd_window_init.
-  */
--#define FF_KBD_WINDOW_MAX 1024
-+#define FF_KBD_WINDOW_MAX 2048
- 
- /**
-  * Generate a Kaiser-Bessel Derived Window.
-diff --git a/libavcodec/parsers.c b/libavcodec/parsers.c
-index b12c48f79f..8ded4d318b 100644
---- a/libavcodec/parsers.c
-+++ b/libavcodec/parsers.c
-@@ -23,6 +23,7 @@
- extern const AVCodecParser ff_aac_parser;
- extern const AVCodecParser ff_aac_latm_parser;
- extern const AVCodecParser ff_ac3_parser;
-+extern const AVCodecParser ff_ac4_parser;
- extern const AVCodecParser ff_adx_parser;
- extern const AVCodecParser ff_amr_parser;
- extern const AVCodecParser ff_apv_parser;
-diff --git a/libavformat/mpegts.c b/libavformat/mpegts.c
-index 981dd8cf0d..71c7c67898 100644
---- a/libavformat/mpegts.c
-+++ b/libavformat/mpegts.c
-@@ -2047,6 +2047,11 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
-         ext_desc_tag = get8(pp, desc_end);
-         if (ext_desc_tag < 0)
-             return AVERROR_INVALIDDATA;
-+        if (st->codecpar->codec_id == AV_CODEC_ID_BIN_DATA &&\
-+            ext_desc_tag == AC4_DESCRIPTOR_TAG_EXTENSION) {\
-+            st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;\
-+            st->codecpar->codec_id = AV_CODEC_ID_AC4;\
+diff -urpN a/libavcodec/ac4_parser.c b/libavcodec/ac4_parser.c
+--- a/libavcodec/ac4_parser.c	1969-12-31 19:00:00.000000000 -0500
++++ b/libavcodec/ac4_parser.c	2026-09-05 22:35:51.596689303 -0400
+@@ -0,0 +1,96 @@
++/*
++ * Copyright (c) 2025 Paul B Mahol
++ *
++ * This file is part of Librempeg
++ *
++ * Librempeg is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * Librempeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with Librempeg; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++/**
++ * @file
++ * AC-4 audio parser
++ *
++ * Determines the duration for each packet.
++ */
++
++#include "libavutil/mem_internal.h"
++#include "libavutil/rational.h"
++#include "ac4dec_data.h"
++#include "get_bits.h"
++#include "parser.h"
++
++static int variable_bits(GetBitContext *gb, int bits)
++{
++    int value = 0;
++    int read_more;
++
++    do {
++        value += get_bits(gb, bits);
++        read_more = get_bits1(gb);
++        if (read_more) {
++            value <<= bits;
++            value += 1 << bits;
 +        }
-         if (st->codecpar->codec_id == AV_CODEC_ID_OPUS &&
-             ext_desc_tag == 0x80) { /* User defined (provisional Opus) */
-             if (!st->codecpar->extradata) {
-diff --git a/libavformat/mpegts.h b/libavformat/mpegts.h
-index 2bc53447d0..67d28fad4f 100644
---- a/libavformat/mpegts.h
-+++ b/libavformat/mpegts.h
-@@ -220,6 +220,8 @@ https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/
- /* DVB descriptor_tag_extension values from
-    ETSI EN 300 468 Table 109: Possible locations of extended descriptors */
- #define SUPPLEMENTARY_AUDIO_DESCRIPTOR 0x06
-+#define AC4_DESCRIPTOR 0x15
-+#define AC4_DESCRIPTOR_TAG_EXTENSION 0x15
- 
- /** see "Dolby Vision Streams Within the MPEG-2 Transport Stream Format"
- https://professional.dolby.com/siteassets/content-creation/dolby-vision-for-content-creators/dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2.pdf */
--- 
-2.55.0
-
++    } while (read_more);
++
++    return value;
++}
++
++static int ac4_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
++                     const uint8_t **poutbuf, int *poutbuf_size,
++                     const uint8_t *buf, int buf_size)
++{
++    int version, frame_rate_index, ret, fs_index;
++    AVRational resampling_ratio;
++    GetBitContext gbc, *gb = &gbc;
++
++    ret = init_get_bits8(gb, buf, buf_size);
++    if (ret < 0)
++        return ret;
++
++    version = get_bits(gb, 2);
++    if (version == 3)
++        version += variable_bits(gb, 2);
++    get_bits(gb, 10);
++
++    if (get_bits1(gb)) {
++        int nb_wait_frames = get_bits(gb, 3);
++
++        if (nb_wait_frames > 0)
++            skip_bits(gb, 2);
++    }
++
++    fs_index = get_bits1(gb);
++    frame_rate_index = get_bits(gb, 4);
++    resampling_ratio = resampling_ratios[frame_rate_index];
++    s1->key_frame = get_bits1(gb);
++
++    s1->duration = frame_len_base_48khz[frame_rate_index];
++    avctx->sample_rate = fs_index ? 48000 : 44100;
++    avctx->sample_rate = av_rescale(avctx->sample_rate,
++                                    resampling_ratio.den,
++                                    resampling_ratio.num);
++
++    /* always return the full packet. this parser isn't doing any splitting or
++       combining, only packet analysis */
++    *poutbuf      = buf;
++    *poutbuf_size = buf_size;
++    return buf_size;
++}
++
++const AVCodecParser ff_ac4_parser = {
++    .codec_ids = { AV_CODEC_ID_AC4 },
++    .parser_parse = ac4_parse,
++};
