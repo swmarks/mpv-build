@@ -10,7 +10,6 @@ Subject: [PATCH] avcodec: add AC-4 decoder and parser
  libavcodec/ac4dec_data.h     | 1688 +++++++++
  libavcodec/allcodecs.c       |    1 +
  libavcodec/kbdwin.h          |    2 +-
- libavcodec/parser_internal.h |   57 +
  libavcodec/parsers.c         |    1 +
  libavformat/mpegts.c         |    5 +
  libavformat/mpegts.h         |    2 +
@@ -18,7 +17,6 @@ Subject: [PATCH] avcodec: add AC-4 decoder and parser
  create mode 100644 libavcodec/ac4_parser.c
  create mode 100644 libavcodec/ac4dec.c
  create mode 100644 libavcodec/ac4dec_data.h
- create mode 100644 libavcodec/parser_internal.h
 
 diff --git a/libavcodec/Makefile b/libavcodec/Makefile
 index fb22541f8d..12168bed5e 100644
@@ -78,8 +76,7 @@ index 0000000000..1ad425f0cf
 +#include "ac4dec_data.h"
 +#include "get_bits.h"
 +#include "parser.h"
-+#include "parser_internal.h"
-+
+++
 +static int variable_bits(GetBitContext *gb, int bits)
 +{
 +    int value = 0;
@@ -139,9 +136,9 @@ index 0000000000..1ad425f0cf
 +    return buf_size;
 +}
 +
-+const FFCodecParser ff_ac4_parser = {
-+    PARSER_CODEC_LIST(AV_CODEC_ID_AC4),
-+    .parse = ac4_parse,
++const AVCodecParser ff_ac4_parser = {
++    .codec_ids      = { AV_CODEC_ID_AC4 },
++    .parser_parse   = ac4_parse,
 +};
 diff --git a/libavcodec/ac4dec.c b/libavcodec/ac4dec.c
 new file mode 100644
@@ -8638,69 +8635,6 @@ index 4185c4206f..2ea35e1bd5 100644
  
  /**
   * Generate a Kaiser-Bessel Derived Window.
-diff --git a/libavcodec/parser_internal.h b/libavcodec/parser_internal.h
-new file mode 100644
-index 0000000000..d0e0c8beb5
---- /dev/null
-+++ b/libavcodec/parser_internal.h
-@@ -0,0 +1,57 @@
-+/*
-+ * This file is part of FFmpeg.
-+ *
-+ * FFmpeg is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Lesser General Public
-+ * License as published by the Free Software Foundation; either
-+ * version 2.1 of the License, or (at your option) any later version.
-+ *
-+ * FFmpeg is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * Lesser General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General Public
-+ * License along with FFmpeg; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-+ */
-+
-+#ifndef AVCODEC_PARSER_INTERNAL_H
-+#define AVCODEC_PARSER_INTERNAL_H
-+
-+#include <stdint.h>
-+
-+#include "libavutil/macros.h"
-+#include "avcodec.h"
-+
-+typedef struct FFCodecParser {
-+    AVCodecParser p;
-+    unsigned priv_data_size;
-+    int (*init)(AVCodecParserContext *s);
-+    int (*parse)(AVCodecParserContext *s,
-+                 AVCodecContext *avctx,
-+                 const uint8_t **poutbuf, int *poutbuf_size,
-+                 const uint8_t *buf, int buf_size);
-+    void (*close)(AVCodecParserContext *s);
-+} FFCodecParser;
-+
-+static inline const FFCodecParser *ffcodecparser(const AVCodecParser *parser)
-+{
-+    return (const FFCodecParser*)parser;
-+}
-+
-+#define EIGTH_ARG(a,b,c,d,e,f,g,h,...) h
-+#define NO_FAIL
-+// Expands to nothing if <= 7 args; induces compilation failure if not.
-+#define CHECK_FOR_TOO_MANY_IDS(...) AV_JOIN(EIGTH_ARG(__VA_ARGS__, NO, NO, NO, NO, NO, NO, NO, NO), _FAIL)
-+
-+// For compatibility with MSVC's old, spec-incompliant preprocessor.
-+#define FF_MSVC_EXPAND(...) __VA_ARGS__
-+#define FIRST_SEVEN2(a,b,c,d,e,f,g,...) a,b,c,d,e,f,g
-+#define FIRST_SEVEN(...) FF_MSVC_EXPAND(FIRST_SEVEN2(__VA_ARGS__))
-+#define TIMES_SEVEN(a) a,a,a,a,a,a,a
-+
-+#define PARSER_CODEC_LIST(...) CHECK_FOR_TOO_MANY_IDS(__VA_ARGS__) \
-+    .p.codec_ids = { FIRST_SEVEN(__VA_ARGS__, TIMES_SEVEN(AV_CODEC_ID_NONE)) }
-+
-+#endif /* AVCODEC_PARSER_INTERNAL_H */
 diff --git a/libavcodec/parsers.c b/libavcodec/parsers.c
 index b12c48f79f..8ded4d318b 100644
 --- a/libavcodec/parsers.c
