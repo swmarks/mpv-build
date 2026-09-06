@@ -1,0 +1,25 @@
+diff --git a/demux/demux_mkv.c b/demux/demux_mkv.c
+index 501d20e977..01d5500496 100644
+--- a/demux/demux_mkv.c
++++ b/demux/demux_mkv.c
+@@ -1910,7 +1910,19 @@ static int demux_mkv_open_audio(demuxer_t *demuxer, mkv_track_t *track)
+         }
+     }
+ 
+-    if (!strcmp(track->codec_id, "A_MS/ACM")) { /* AVI compatibility mode */
++    if (!strcmp(track->codec_id, "A_QUICKTIME")) {
++        if (track->private_size >= 8) {
++            sh_a->codec_tag = AV_RL32(track->private_data + 4);
++            mp_set_codec_from_tag(sh_a);
++            // Some non-compliant files have fourcc at offset 0.
++            if (!sh_a->codec) {
++                sh_a->codec_tag = AV_RL32(track->private_data);
++                mp_set_codec_from_tag(sh_a);
++            }
++            extradata = track->private_data;
++            extradata_len = track->private_size;
++        }
++    } else if (!strcmp(track->codec_id, "A_MS/ACM")) { /* AVI compatibility mode */
+         // The private_data contains a WAVEFORMATEX struct
+         if (track->private_size < 18)
+             goto error;
