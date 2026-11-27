@@ -36,3 +36,4 @@
 0155-ao-audiotrack-run-a-passthrough-track-at-audio-priority.patch
 0156-ao-audiotrack-extrapolate-a-pcm-timestamp-on-its-own-clock.patch
 0157-ao-audiotrack-drop-a-stale-or-pre-flush-pcm-timestamp.patch
+9002-matroska-a-quicktime-ac4.patch
